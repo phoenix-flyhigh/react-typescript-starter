@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
+import { useQuery } from "@tanstack/react-query";
 
 type Todo = {
   id: number,
@@ -11,7 +12,12 @@ function App() {
 
   const [networkStatus, setNetworkStatus] = useState(navigator.onLine ? "online" : "offline");
   const [workerStatus, setWorkerStatus] = useState("");
-  const [todos, setTodos] = useState<Todo[]>([])
+
+  const {data: todos, isLoading} = useQuery<Todo[]>({
+    queryFn: () => fetch('https://jsonplaceholder.typicode.com/todos').then(res => res.json()).then(data => data.slice(0, 20)),
+    queryKey: ["todos"],
+    staleTime: 60000
+  })
 
   useEffect(() => {
     const renderStatus = () => {
@@ -32,15 +38,6 @@ function App() {
       }
     })()
 
-
-  //   fetch('https://jsonplaceholder.typicode.com/todos', {
-  //     method: 'GET',
-  //   }).then(res => res.json())
-  //     .then(data => {
-  //       setTodos(data.slice(0, 20))
-  //     })
-  //     .catch(err => console.error(err))
-
     window.addEventListener("online", renderStatus);
     window.addEventListener("offline", renderStatus);
     return () => {
@@ -48,6 +45,10 @@ function App() {
       window.removeEventListener("offline", renderStatus);
     }
   }, [])
+
+  if(isLoading){
+    return (<div>Loading...</div>)
+  }
 
   return (
     <div className="bg-black h-screen w-full flex flex-col gap-4 justify-center items-center text-white">
@@ -59,7 +60,7 @@ function App() {
       </p>
 
       <ul className="flex flex-col gap-2 text-md text-amber-200">
-        {todos.map(todo => <li key={todo.id}>{todo.title}</li>)}
+        {todos?.map(todo => <li key={todo.id}>{todo.title}</li>)}
       </ul>
     </div>
   );
